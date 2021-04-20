@@ -1,4 +1,4 @@
-<template>
+<el-tag :type="scope.row.status?'success':'danger'">{{ scope.row.status? '已上架':'未上架' }}</el-tag><template>
   <div class="app-container">
     <div class="filter-container">
       <el-button class="filter-item" style="margin-left: 10px;" type="primary" icon="el-icon-edit" @click="handleCreate">
@@ -48,7 +48,7 @@
       </el-table-column>
       <el-table-column align="center" label="状态" width="100" class-name="status-col">
         <template slot-scope="scope">
-          <span>{{ scope.row.status? '已上架':'已下架' }}</span>
+          <el-tag :type="scope.row.status?'success':'danger'">{{ scope.row.status? '已上架':'未上架' }}</el-tag>
         </template>
       </el-table-column>
       <el-table-column align="center" label="创建时间" width="160">
@@ -61,7 +61,7 @@
           <el-button type="primary" size="mini" @click="handleUpdate(row)">
             编辑
           </el-button>
-          <el-button v-if="row.status!='published'" size="mini" type="success" @click="handleModifyStatus(row,'published')">
+          <el-button  size="mini" :type="row.status?'success':''" @click="handleModifyStatus(row,row.status)">
             下架
           </el-button>
           <el-button v-if="row.status!='deleted'" size="mini" type="danger" @click="handleDelete(row,$index)">
@@ -73,15 +73,18 @@
 
     <pagination v-show="total>0" :total="total" :page.sync="listQuery.page" :limit.sync="listQuery.limit" @pagination="getList" />
 
-    <el-dialog :title="textMap[dialogStatus]" :visible.sync="dialogFormVisible">
-      <el-form ref="dataForm" :rules="rules" :model="temp" label-position="left" label-width="70px" style="width: 600px; margin-left:50px;">
+    <el-dialog :title="textMap[dialogStatus]" :visible.sync="dialogFormVisible" fullscreen="true">
+      <el-form ref="dataForm" :rules="rules" :model="temp" label-position="left" label-width="70px" style="width: 800px; margin-left:50px;">
 
         <el-form-item label="标题" prop="title">
           <el-input v-model="temp.title" />
         </el-form-item>
+        <!-- <el-form-item  style="margin-bottom: 30px;">
+          <Upload v-model="temp.cover" />
+        </el-form-item> -->
 
         <el-form-item label="试看内容" prop="try" style="margin-bottom: 30px;">
-          <Tinymce ref="editor" v-model="temp.try" :height="300" />
+          <Tinymce ref="editor" v-model="temp.try" :height="400" />
         </el-form-item>
         <el-form-item label="课程内容" style="margin-bottom: 30px;">
           <Tinymce ref="editor" v-model="temp.content" :height="400" />
@@ -101,6 +104,7 @@
             </el-radio-group>
           </template>
         </el-form-item>
+        
 
       </el-form>
       <div slot="footer" class="dialog-footer">
@@ -121,10 +125,11 @@ import Tinymce from '@/components/Tinymce'
 import waves from '@/directive/waves' // waves directive
 import { parseTime } from '@/utils'
 import Pagination from '@/components/Pagination' // secondary package based on el-pagination
+// import Upload from '@/components/Upload/SingleImage2'
 
 export default {
   name: 'ComplexTable',
-  components: { Pagination, Tinymce },
+  components: { Pagination, Tinymce  },
   directives: { waves },
   filters: {
     statusFilter(status) {
@@ -154,7 +159,7 @@ export default {
         sort: '+id'
       },
       importanceOptions: [1, 2, 3],
-      sortOptions: [{ label: 'ID Ascending', key: '+id' }, { label: 'ID Descending', key: '-id' }],
+      sortOptions: [{ label: '已上架', key: '+id' }, { label: '未上架', key: '-id' }],
       statusOptions: ['published', 'draft', 'deleted'],
       showReviewer: false,
       temp: {
@@ -167,14 +172,14 @@ export default {
       dialogFormVisible: false,
       dialogStatus: '',
       textMap: {
-        update: 'Edit',
-        create: 'Create'
+        update: '修改',
+        create: '添加'
       },
       dialogPvVisible: false,
       pvData: [],
       rules: {
         title: [{ required: true, message: 'title is required', trigger: 'blur' }],
-        trySee: [{ required: true, message: '试看 is required', trigger: 'blur' }]
+        try: [{ required: true, message: '试看 is required', trigger: 'blur' }]
       },
       downloadLoading: false
     }
@@ -205,7 +210,7 @@ export default {
         message: '操作Success',
         type: 'success'
       })
-      row.status = status
+      row.status = !status
     },
     sortChange(data) {
       const { prop, order } = data
@@ -223,13 +228,11 @@ export default {
     },
     resetTemp() {
       this.temp = {
-        id: undefined,
-        importance: 1,
-        remark: '',
-        timestamp: new Date(),
         title: '',
-        status: 'published',
-        type: ''
+        try: '',
+        content: '',
+        t_price: 0,
+        status: 0
       }
     },
     handleCreate() {
@@ -247,7 +250,6 @@ export default {
           this.temp.author = 'vue-element-admin'
 
           createMedia(this.temp).then(() => {
-            console.log(222222222222222222222222)
             this.list.unshift(this.temp)
             this.dialogFormVisible = false
             this.$notify({
@@ -274,7 +276,7 @@ export default {
         if (valid) {
           const tempData = Object.assign({}, this.temp)
           tempData.timestamp = +new Date(tempData.timestamp) // change Thu Nov 30 2017 16:41:05 GMT+0800 (CST) to 1512031311464
-          updateArticle(tempData).then(() => {
+          updateMedia(tempData).then(() => {
             const index = this.list.findIndex(v => v.id === this.temp.id)
             this.list.splice(index, 1, this.temp)
             this.dialogFormVisible = false
@@ -298,6 +300,7 @@ export default {
       })
       this.list.splice(index, 1)
     },
+    
     handleFetchPv(pv) {
       fetchPv(pv).then(response => {
         this.pvData = response.data.pvData

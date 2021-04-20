@@ -172,6 +172,14 @@ export const asyncRoutes = [
         meta: {
           title: '专栏'
         }
+      },
+      {
+        path: 'column/column_detail?id(\\d+)',
+        component: () => import('@/views/course/column'),
+        name: 'Column',
+        meta: {
+          title: '专栏详情'
+        }
       }
     ]
   },
